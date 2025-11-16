@@ -84,16 +84,34 @@
     }
     .log {
       margin-top: .75rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: .8rem;
+      font-size: .85rem;
       background: #020617;
       border-radius: .75rem;
       padding: .75rem;
-      max-height: 150px;
+      max-height: 180px;
       overflow: auto;
       border: 1px solid #111827;
-      white-space: pre-wrap;
     }
+    .log-item {
+      display: flex;
+      gap: .5rem;
+      align-items: flex-start;
+      padding: .5rem .6rem;
+      border-radius: .6rem;
+      border: 1px solid #111827;
+      background: #0b1220;
+      color: #e5e7eb;
+      margin-bottom: .5rem;
+    }
+    .log-item:last-child { margin-bottom: 0; }
+    .log-item .icon { font-size: 1rem; line-height: 1.2; }
+    .log-item .content { flex: 1; }
+    .log-item.info { border-left: 4px solid #4f46e5; }
+    .log-item.success { border-left: 4px solid #10b981; }
+    .log-item.error { border-left: 4px solid #ef4444; }
+    .log-item a { color: #93c5fd; text-decoration: none; }
+    .log-item a:hover { text-decoration: underline; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1220; padding: 0 .25rem; border-radius: .3rem; }
   </style>
 </head>
 <body>
@@ -112,15 +130,32 @@
       • Cooldown per address enforced by the contract.
     </p>
 
-    <div id="log" class="log"></div>
+    <div id="log" class="log" aria-live="polite" aria-atomic="false"></div>
   </div>
 
 <script>
   const btn = document.getElementById("btn");
   const logEl = document.getElementById("log");
 
-  function log(msg) {
-    logEl.textContent += msg + "\\n";
+  function shortenAddress(addr) {
+    return addr ? addr.slice(0, 6) + "…" + addr.slice(-4) : "";
+  }
+
+  function log(msg, type = "info", { html = false, icon } = {}) {
+    const wrap = document.createElement("div");
+    wrap.className = `log-item ${type}`;
+
+    const iconEl = document.createElement("div");
+    iconEl.className = "icon";
+    iconEl.textContent = icon || (type === "success" ? "✅" : type === "error" ? "❌" : "⏳");
+
+    const contentEl = document.createElement("div");
+    contentEl.className = "content";
+    if (html) contentEl.innerHTML = msg; else contentEl.textContent = msg;
+
+    wrap.appendChild(iconEl);
+    wrap.appendChild(contentEl);
+    logEl.appendChild(wrap);
     logEl.scrollTop = logEl.scrollHeight;
   }
 
@@ -137,7 +172,7 @@
     }
 
     btn.disabled = true;
-    log("⏳ Requesting 0.3 tBNB for " + to + "...");
+    log("Requesting 0.3 tBNB for " + shortenAddress(to) + "…", "info", { icon: "⏳" });
 
     try {
       const url = "/api/drip?to=" + encodeURIComponent(to);
@@ -148,15 +183,16 @@
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
       if (!res.ok) {
-        log("❌ Error: " + (data.error || text));
+        log("Error: " + (data.error || text), "error");
         alert("Error: " + (data.error || text));
       } else {
-        log("✅ Tx sent: " + data.hash);
-        log("Explorer: https://testnet.bscscan.com/tx/" + data.hash);
+        const explorer = "https://testnet.bscscan.com/tx/" + data.hash;
+        const html = `Sent <b>0.3 tBNB</b> to <code>${shortenAddress(to)}</code> — <a href="${explorer}" target="_blank" rel="noopener">View on BscScan</a>`;
+        log(html, "success", { html: true });
       }
     } catch (err) {
       console.error(err);
-      log("❌ Request failed: " + (err.message || err));
+      log("Request failed: " + (err.message || err), "error");
       alert("Request failed: " + (err.message || err));
     } finally {
       btn.disabled = false;
@@ -165,4 +201,3 @@
 </script>
 </body>
 </html>
-
