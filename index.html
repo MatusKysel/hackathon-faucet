@@ -82,34 +82,7 @@
       color: #9ca3af;
       margin-top: .75rem;
     }
-    .stats {
-      margin-top: .75rem;
-      background: #020617;
-      border: 1px solid #111827;
-      border-radius: .75rem;
-      padding: .75rem;
-    }
-    .stats-title {
-      margin: 0 0 .5rem;
-      font-size: .9rem;
-      color: #9ca3af;
-    }
-    .stats-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: .6rem;
-      margin-bottom: .6rem;
-    }
-    .stat {
-      background: #0b1220;
-      border: 1px solid #111827;
-      border-radius: .6rem;
-      padding: .5rem .6rem;
-    }
-    .stat .label { color: #9ca3af; font-size: .75rem; }
-    .stat .value { font-size: 1.05rem; font-weight: 700; }
-    .stat .subvalue { color: #9ca3af; font-size: .75rem; margin-top: .2rem; }
-    .stats-note { color: #9ca3af; font-size: .75rem; margin: 0; }
+    
     .log {
       margin-top: .75rem;
       font-size: .85rem;
@@ -158,50 +131,13 @@
       • Cooldown per address enforced by the contract.
     </p>
 
-    <div class="stats" id="stats">
-      <p class="stats-title">Usage</p>
-      <div class="stats-row">
-        <div class="stat">
-          <div class="label">Drips</div>
-          <div class="value" id="stat-drips-total">—</div>
-          <div class="subvalue">24h: <span id="stat-drips-24h">—</span></div>
-        </div>
-        <div class="stat">
-          <div class="label">Unique recipients</div>
-          <div class="value" id="stat-unique-total">—</div>
-          <div class="subvalue">24h: <span id="stat-unique-24h">—</span></div>
-        </div>
-      </div>
-      <div class="stats-row">
-        <div class="stat">
-          <div class="label">Dispensed</div>
-          <div class="value" id="stat-amount-total">—</div>
-          <div class="subvalue">24h: <span id="stat-amount-24h">—</span></div>
-        </div>
-        <div class="stat">
-          <div class="label">Latest</div>
-          <div class="value" id="stat-latest">—</div>
-          <div class="subvalue" id="stat-latest-time"> </div>
-        </div>
-      </div>
-      <p class="stats-note" id="stats-note"></p>
-    </div>
-
     <div id="log" class="log" aria-live="polite" aria-atomic="false"></div>
   </div>
 
 <script>
   const btn = document.getElementById("btn");
   const logEl = document.getElementById("log");
-  const dripsTotalEl = document.getElementById("stat-drips-total");
-  const drips24hEl = document.getElementById("stat-drips-24h");
-  const uniqueTotalEl = document.getElementById("stat-unique-total");
-  const unique24hEl = document.getElementById("stat-unique-24h");
-  const amountTotalEl = document.getElementById("stat-amount-total");
-  const amount24hEl = document.getElementById("stat-amount-24h");
-  const latestEl = document.getElementById("stat-latest");
-  const latestTimeEl = document.getElementById("stat-latest-time");
-  const statsNoteEl = document.getElementById("stats-note");
+  
 
   function shortenAddress(addr) {
     return addr ? addr.slice(0, 6) + "…" + addr.slice(-4) : "";
@@ -229,48 +165,7 @@
     return /^0x[a-fA-F0-9]{40}$/.test(addr);
   }
 
-  async function fetchJSON(url) {
-    const res = await fetch(url);
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { throw new Error(text); }
-    if (!res.ok) throw new Error(data.error || text);
-    return data;
-  }
-
-  function setStatsLoading() {
-    dripsTotalEl.textContent = uniqueTotalEl.textContent = amountTotalEl.textContent = "…";
-    drips24hEl.textContent = unique24hEl.textContent = amount24hEl.textContent = "…";
-    latestEl.textContent = latestTimeEl.textContent = "…";
-    statsNoteEl.textContent = "";
-  }
-
-  async function refreshStats() {
-    try {
-      setStatsLoading();
-      const [all, day] = await Promise.all([
-        fetchJSON("/api/stats"),
-        fetchJSON("/api/stats?hours=24"),
-      ]);
-
-      dripsTotalEl.textContent = String(all.totalDrips ?? "0");
-      uniqueTotalEl.textContent = String(all.uniqueRecipients ?? "0");
-      amountTotalEl.textContent = (all.totalAmount ? (all.totalAmount + " tBNB") : "0 tBNB");
-
-      drips24hEl.textContent = String(day.totalDrips ?? "0");
-      unique24hEl.textContent = String(day.uniqueRecipients ?? "0");
-      amount24hEl.textContent = (day.totalAmount ? (day.totalAmount + " tBNB") : "0 tBNB");
-
-      latestEl.textContent = all.latestBlock ? `Block ${all.latestBlock}` : "—";
-      latestTimeEl.textContent = all.latestTimestamp ? new Date(all.latestTimestamp * 1000).toLocaleString() : "";
-    } catch (err) {
-      dripsTotalEl.textContent = uniqueTotalEl.textContent = amountTotalEl.textContent = "—";
-      drips24hEl.textContent = unique24hEl.textContent = amount24hEl.textContent = "—";
-      latestEl.textContent = latestTimeEl.textContent = "—";
-      statsNoteEl.textContent = "Stats unavailable";
-      console.warn("Stats error:", err);
-    }
-  }
+  
 
   btn.addEventListener("click", async () => {
     const to = document.getElementById("addr").value.trim();
@@ -298,8 +193,7 @@
         const explorer = "https://testnet.bscscan.com/tx/" + data.hash;
         const html = `Sent <b>0.3 tBNB</b> to <code>${shortenAddress(to)}</code> — <a href="${explorer}" target="_blank" rel="noopener">View on BscScan</a>`;
         log(html, "success", { html: true });
-        // Update usage stats after a successful drip
-        refreshStats();
+        
       }
     } catch (err) {
       console.error(err);
@@ -310,9 +204,7 @@
     }
   });
 
-  // Initial stats load + periodic refresh
-  refreshStats();
-  setInterval(refreshStats, 60_000);
+  
 </script>
 </body>
 </html>
