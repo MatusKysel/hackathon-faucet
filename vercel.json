@@ -2,10 +2,12 @@
   "version": 2,
   "builds": [
     { "src": "api/drip.js", "use": "@vercel/node" },
+    { "src": "api/stats.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/drip", "dest": "/api/drip.js" },
+    { "src": "/api/stats", "dest": "/api/stats.js" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
